@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  cnterra-postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    image: postgres-pt:14.2
+    container_name: cnterra-postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=cnterra
+      - POSTGRES_USER=cnterra
+      - POSTGRES_PASSWORD=cnterra
+    volumes:
+      - cnterra-vol-pg:/var/lib/postgresql/data/
+    ports:
+      - 5432:5432
+    networks:
+      - cnterra-net
+
+  cnterra-rabbitmq:
+    image: rabbitmq:3.9
+    container_name: cnterra-rabbitmq
+    restart: always
+    ports:
+      - 5672:5672
+    networks:
+      - cnterra-net
+
+volumes:
+  cnterra-vol-pg:
+    name: cnterra-vol-pg
+
+networks:
+  cnterra-net:
+    name: cnterra-net
