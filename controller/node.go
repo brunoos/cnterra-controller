@@ -10,7 +10,7 @@ import (
 )
 
 type formCreateNode struct {
-	Nodeid     int         `json:"nodeid"`
+	NodeID     int         `json:"nodeid"`
 	Model      string      `json:"model"`
 	Enabled    bool        `json:"enabled"`
 	Attributes model.JSONB `json:"attributes"`
@@ -46,7 +46,7 @@ func CreateNode(c *gin.Context) {
 
 	node := model.Node{}
 	node.ID = uuid.New()
-	node.Nodeid = form.Nodeid
+	node.NodeID = form.NodeID
 	node.Model = form.Model
 	node.Enabled = form.Enabled
 	node.Attributes = form.Attributes

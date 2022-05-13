@@ -2,7 +2,7 @@ package model
 
 type Node struct {
 	BaseModel
-	Nodeid     int    `json:"nodeid"`
+	NodeID     int    `json:"nodeid" gorm:"column:nodeid"`
 	Model      string `json:"model"`
 	Enabled    bool   `json:"enabled"`
 	Attributes JSONB  `json:"attributes"`
