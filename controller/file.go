@@ -32,8 +32,6 @@ func GetAllFiles(c *gin.Context) {
 	for _, file := range files {
 		f := new(model.FileNoContent)
 		f.ID = file.ID
-		f.CreatedAt = file.CreatedAt
-		f.UpdatedAt = file.UpdatedAt
 		f.Name = file.Name
 		resp = append(resp, f)
 	}
@@ -99,10 +97,8 @@ func CreateFile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"id":         file.ID,
-		"name":       file.Name,
-		"created_at": file.CreatedAt,
-		"updated_at": file.UpdatedAt,
+		"id":   file.ID,
+		"name": file.Name,
 	})
 }
 

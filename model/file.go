@@ -1,12 +1,14 @@
 package model
 
+import "github.com/google/uuid"
+
 type File struct {
-	BaseModel
-	Name    string `json:"name"`
-	Content string `json:"content"`
+	ID      uuid.UUID `json:"id"`
+	Name    string    `json:"name"`
+	Content string    `json:"content"`
 }
 
 type FileNoContent struct {
-	BaseModel
-	Name string `json:"name"`
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
 }
