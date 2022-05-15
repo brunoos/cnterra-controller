@@ -20,7 +20,7 @@ services:
       - cnterra-net
 
   cnterra-rabbitmq:
-    image: rabbitmq:3.9
+    image: rabbitmq:3.10
     container_name: cnterra-rabbitmq
     restart: always
     ports:
