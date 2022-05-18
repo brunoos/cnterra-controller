@@ -75,6 +75,13 @@ func CreateFile(c *gin.Context) {
 		return
 	}
 
+	if len(form.Name) == 0 || len(form.Content) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "invalid parameters",
+		})
+		return
+	}
+
 	if _, err := base64.StdEncoding.DecodeString(form.Content); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "invalid parameters",

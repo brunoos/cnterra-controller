@@ -82,7 +82,7 @@ func Load(c *gin.Context) {
 	config := make([]*LoadConfig, 0)
 	for _, conf := range form.Config {
 		node := new(model.Node)
-		result := db.DB.Where("id = ? AND enabled = ?", conf.Node, true).Find(node)
+		result := db.DB.Where("id = ?", conf.Node).First(node)
 		switch result.Error {
 		case nil:
 			// do nothing
@@ -101,7 +101,7 @@ func Load(c *gin.Context) {
 		}
 
 		file := new(model.File)
-		result = db.DB.Where("id = ?", conf.File.String()).Find(file)
+		result = db.DB.Where("id = ?", conf.File.String()).First(file)
 		switch result.Error {
 		case nil:
 			// do nothing
