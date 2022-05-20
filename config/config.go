@@ -6,7 +6,10 @@ var (
 	BaseDir = "/opt/cnterra-loader/"
 	TmpDir  = "/opt/cnterra-loader/tmp/"
 
-	DbAddress  = "localhost"
+	Address = "0.0.0.0"
+	Port    = "8080"
+
+	DbAddress  = "cnterra-mongo"
 	DbPort     = "27017"
 	DbName     = "cnterra"
 	DbUser     = "cnterra"
@@ -14,6 +17,13 @@ var (
 )
 
 func Initialize() {
+	if str, found := os.LookupEnv("CNTERRA_ADDRESS"); found {
+		Address = str
+	}
+	if str, found := os.LookupEnv("CNTERRA_PORT"); found {
+		Port = str
+	}
+
 	if str, found := os.LookupEnv("MONGO_ADDRESS"); found {
 		DbAddress = str
 	}

@@ -30,5 +30,5 @@ func main() {
 	r.POST("/load", controller.Load)
 
 	log.Println("[INFO] Server running...")
-	r.Run()
+	r.Run(config.Address + ":" + config.Port)
 }
