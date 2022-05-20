@@ -2,6 +2,7 @@ package controller
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -9,8 +10,9 @@ import (
 	"github.com/brunoos/cnterra-controller/db"
 	"github.com/brunoos/cnterra-controller/model"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type LoadConfig struct {
@@ -19,8 +21,8 @@ type LoadConfig struct {
 }
 
 type FormLoadConfig struct {
-	Node uuid.UUID `json:"node"`
-	File uuid.UUID `json:"file"`
+	Node string `json:"node"`
+	File string `json:"file"`
 }
 
 type FormLoad struct {
@@ -82,39 +84,69 @@ func Load(c *gin.Context) {
 	config := make([]*LoadConfig, 0)
 	for _, conf := range form.Config {
 		node := new(model.Node)
-		result := db.DB.Where("id = ?", conf.Node).First(node)
-		switch result.Error {
+
+		id, err := primitive.ObjectIDFromHex(conf.Node)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "invalid node ID",
+			})
+			return
+		}
+
+		col := db.DB.Collection("nodes")
+		res := col.FindOne(context.Background(), bson.M{"_id": id})
+		switch res.Err() {
 		case nil:
 			// do nothing
-		case gorm.ErrRecordNotFound:
-			log.Printf("[ERRO] Node '%s' not found", conf.Node)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "invalid parameter",
+		case mongo.ErrNoDocuments:
+			c.JSON(http.StatusNotFound, gin.H{
+				"message": "node not found",
 			})
 			return
 		default:
-			log.Printf("[ERRO] Error retrieving node '%s'", conf.Node)
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": "error retrieving node information",
+				"message": "error retrieving the node",
+			})
+			return
+		}
+
+		if err = res.Decode(node); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "error retrieving the node",
 			})
 			return
 		}
 
 		file := new(model.File)
-		result = db.DB.Where("id = ?", conf.File.String()).First(file)
-		switch result.Error {
+
+		id, err = primitive.ObjectIDFromHex(conf.File)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "invalid file ID",
+			})
+			return
+		}
+
+		col = db.DB.Collection("files")
+		res = col.FindOne(context.Background(), bson.M{"_id": id})
+		switch res.Err() {
 		case nil:
 			// do nothing
-		case gorm.ErrRecordNotFound:
-			log.Printf("[ERRO] File '%s' not found", conf.File)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "invalid parameter",
+		case mongo.ErrNoDocuments:
+			c.JSON(http.StatusNotFound, gin.H{
+				"message": "file not found",
 			})
 			return
 		default:
-			log.Printf("[ERRO] Error retrieving file '%s'", conf.File)
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": "error retrieving file information",
+				"message": "error retrieving the file",
+			})
+			return
+		}
+
+		if err = res.Decode(file); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "error retrieving the file",
 			})
 			return
 		}

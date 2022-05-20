@@ -1,14 +1,16 @@
 package model
 
-import "github.com/google/uuid"
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type File struct {
-	ID      uuid.UUID `json:"id"`
-	Name    string    `json:"name"`
-	Content string    `json:"content"`
+	ID      primitive.ObjectID `json:"id" bson:"_id"`
+	Name    string             `json:"name" bson:"name"`
+	Content string             `json:"content" bson:"content"`
 }
 
 type FileNoContent struct {
-	ID   uuid.UUID `json:"id"`
-	Name string    `json:"name"`
+	ID   primitive.ObjectID `json:"id" bson:"_id"`
+	Name string             `json:"name" bson:"name"`
 }

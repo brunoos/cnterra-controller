@@ -1,24 +1,37 @@
 package db
 
 import (
+	"context"
 	"fmt"
 	"log"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	"github.com/brunoos/cnterra-controller/config"
 )
 
-var DB *gorm.DB
+var DB *mongo.Database
 
 func Initialize() {
-	dbParams := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		config.DbAddress, config.DbPort, config.DbUser, config.DbPassword, config.DbName, config.DbSslMode)
 
-	var err error
-	DB, err = gorm.Open(postgres.Open(dbParams), &gorm.Config{})
+	uri := fmt.Sprintf("mongodb://%s:%s@%s:%s/",
+		config.DbUser, config.DbPassword, config.DbAddress, config.DbPort)
+
+	client, err := mongo.NewClient(options.Client().ApplyURI(uri))
 	if err != nil {
-		log.Fatalf("[ERRO] Error openning database connection: %s", err)
+		log.Fatalln("[ERRO] Error connecting to mongodb", err)
 	}
+
+	err = client.Connect(context.Background())
+	if err != nil {
+		log.Fatalln("[ERRO] Error connecting to mongodb", err)
+	}
+
+	if err = client.Ping(context.Background(), readpref.Primary()); err != nil {
+		log.Fatalln("[ERRO] Error connecting to mongodb", err)
+	}
+
+	DB = client.Database(config.DbName)
 }

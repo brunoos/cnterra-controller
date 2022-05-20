@@ -1,21 +1,17 @@
 version: "3.9"
 
 services:
-  cnterra-postgres:
-    build:
-      context: .
-      dockerfile: Dockerfile.postgres
-    image: postgres-pt:14.2
-    container_name: cnterra-postgres
+  cnterra-mongo:
+    image: mongo:4.4
+    container_name: cnterra-mongo
     restart: always
     environment:
-      - POSTGRES_DB=cnterra
-      - POSTGRES_USER=cnterra
-      - POSTGRES_PASSWORD=cnterra
+      MONGO_INITDB_ROOT_USERNAME: cnterra
+      MONGO_INITDB_ROOT_PASSWORD: cnterra
     volumes:
-      - cnterra-vol-pg:/var/lib/postgresql/data/
+      - cnterra-vol-mongo:/data/db
     ports:
-      - 5432:5432
+      - 27017:27017
     networks:
       - cnterra-net
 
@@ -29,8 +25,8 @@ services:
       - cnterra-net
 
 volumes:
-  cnterra-vol-pg:
-    name: cnterra-vol-pg
+  cnterra-vol-mongo:
+    name: cnterra-vol-mongo
 
 networks:
   cnterra-net:

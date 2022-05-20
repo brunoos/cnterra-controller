@@ -1,13 +1,16 @@
 package controller
 
 import (
+	"context"
 	"encoding/base64"
 	"net/http"
 
 	"github.com/brunoos/cnterra-controller/db"
 	"github.com/brunoos/cnterra-controller/model"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type formCreateFile struct {
@@ -18,45 +21,64 @@ type formCreateFile struct {
 //------------------------------------------------------------------------------
 
 func GetAllFiles(c *gin.Context) {
-	var files []model.File
-
-	result := db.DB.Find(&files)
-	if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+	col := db.DB.Collection("files")
+	cur, err := col.Find(context.Background(), bson.M{})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "error retrieving files",
 		})
 		return
 	}
 
-	resp := make([]*model.FileNoContent, 0)
-	for _, file := range files {
-		f := new(model.FileNoContent)
-		f.ID = file.ID
-		f.Name = file.Name
-		resp = append(resp, f)
+	defer cur.Close(context.Background())
+
+	files := make([]*model.FileNoContent, 0)
+	for cur.Next(context.Background()) {
+		file := new(model.FileNoContent)
+		if err = cur.Decode(file); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "error retrieving nodes",
+			})
+			return
+		}
+		files = append(files, file)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"files": resp,
+		"files": files,
 	})
 }
 
 func GetFile(c *gin.Context) {
-	var file model.File
-	var err error
-
-	id := c.Param("id")
-	file.ID, err = uuid.Parse(id)
+	param := c.Param("id")
+	id, err := primitive.ObjectIDFromHex(param)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "invalid parameter",
+			"message": "invalid file ID",
 		})
 		return
 	}
 
-	result := db.DB.Find(&file)
-	if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+	col := db.DB.Collection("files")
+	res := col.FindOne(context.Background(), bson.M{"_id": id})
+	switch res.Err() {
+	case nil:
+		// do nothing
+	case mongo.ErrNoDocuments:
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": "file not found",
+		})
+		return
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "error retrieving the file",
+		})
+		return
+	}
+
+	var file model.File
+	if err = res.Decode(&file); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "error retrieving the file",
 		})
 		return
@@ -89,14 +111,14 @@ func CreateFile(c *gin.Context) {
 		return
 	}
 
-	file := model.File{}
-	file.ID = uuid.New()
-	file.Name = form.Name
-	file.Content = form.Content
+	file := model.File{
+		ID:      primitive.NewObjectID(),
+		Name:    form.Name,
+		Content: form.Content,
+	}
 
-	result := db.DB.Create(&file)
-
-	if result.Error != nil {
+	col := db.DB.Collection("files")
+	if _, err := col.InsertOne(context.Background(), &file); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "error creating a new file",
 		})
@@ -110,22 +132,27 @@ func CreateFile(c *gin.Context) {
 }
 
 func DeleteFile(c *gin.Context) {
-	var file model.File
-	var err error
-
-	id := c.Param("id")
-	file.ID, err = uuid.Parse(id)
+	param := c.Param("id")
+	id, err := primitive.ObjectIDFromHex(param)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "invalid parameter",
+			"message": "invalid file ID",
 		})
 		return
 	}
 
-	result := db.DB.Delete(&file)
-	if result.Error != nil {
+	col := db.DB.Collection("files")
+	res, err := col.DeleteOne(context.Background(), bson.M{"_id": id})
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "error deleting the file",
+		})
+		return
+	}
+
+	if res.DeletedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": "file not found",
 		})
 		return
 	}

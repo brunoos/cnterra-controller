@@ -1,31 +1,46 @@
 package controller
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/brunoos/cnterra-controller/db"
 	"github.com/brunoos/cnterra-controller/model"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type formCreateNode struct {
-	NodeID     int         `json:"nodeid"`
-	Model      string      `json:"model"`
-	Attributes model.JSONB `json:"attributes"`
+	NodeID     int               `json:"nodeid"`
+	Model      string            `json:"model"`
+	Attributes map[string]string `json:"attributes"`
 }
 
 //------------------------------------------------------------------------------
 
 func GetAllNodes(c *gin.Context) {
-	var nodes []model.Node
-
-	result := db.DB.Find(&nodes)
-	if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+	col := db.DB.Collection("nodes")
+	cur, err := col.Find(context.Background(), bson.M{})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "error retrieving nodes",
 		})
 		return
+	}
+
+	defer cur.Close(context.Background())
+
+	nodes := make([]*model.Node, 0)
+	for cur.Next(context.Background()) {
+		node := new(model.Node)
+		if err = cur.Decode(node); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "error retrieving nodes",
+			})
+			return
+		}
+		nodes = append(nodes, node)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -43,15 +58,22 @@ func CreateNode(c *gin.Context) {
 		return
 	}
 
-	node := model.Node{}
-	node.ID = uuid.New()
-	node.NodeID = form.NodeID
-	node.Model = form.Model
-	node.Attributes = form.Attributes
+	if len(form.Model) == 0 || form.NodeID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "invalid parameters",
+		})
+		return
+	}
 
-	result := db.DB.Create(&node)
+	node := model.Node{
+		ID:         primitive.NewObjectID(),
+		NodeID:     form.NodeID,
+		Model:      form.Model,
+		Attributes: form.Attributes,
+	}
 
-	if result.Error != nil {
+	col := db.DB.Collection("nodes")
+	if _, err := col.InsertOne(context.Background(), &node); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "error creating a new node",
 		})
@@ -62,22 +84,27 @@ func CreateNode(c *gin.Context) {
 }
 
 func DeleteNode(c *gin.Context) {
-	var node model.Node
-	var err error
-
-	id := c.Param("id")
-	node.ID, err = uuid.Parse(id)
+	param := c.Param("id")
+	id, err := primitive.ObjectIDFromHex(param)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "invalid parameter",
+			"message": "invalid node ID",
 		})
 		return
 	}
 
-	result := db.DB.Delete(&node)
-	if result.Error != nil {
+	col := db.DB.Collection("nodes")
+	res, err := col.DeleteOne(context.Background(), bson.M{"_id": id})
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "error deleting the node",
+		})
+		return
+	}
+
+	if res.DeletedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": "node not found",
 		})
 		return
 	}

@@ -1,30 +1,12 @@
 package model
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
-
-	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type JSONB map[string]string
-
 type Node struct {
-	ID         uuid.UUID `json:"id"`
-	NodeID     int       `json:"nodeid" gorm:"column:nodeid"`
-	Model      string    `json:"model"`
-	Attributes JSONB     `json:"attributes"`
-}
-
-func (j *JSONB) Value() (driver.Value, error) {
-	return json.Marshal(j)
-}
-
-func (j *JSONB) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return errors.New("type assertion to []byte failed")
-	}
-	return json.Unmarshal(b, j)
+	ID         primitive.ObjectID `json:"id" bson:"_id"`
+	NodeID     int                `json:"nodeid" bson:"nodeid"`
+	Model      string             `json:"model" bson:"model"`
+	Attributes map[string]string  `json:"attributes" bson:"attributes"`
 }
