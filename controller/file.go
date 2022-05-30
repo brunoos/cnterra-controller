@@ -5,12 +5,14 @@ import (
 	"encoding/base64"
 	"net/http"
 
-	"github.com/brunoos/cnterra-controller/db"
-	"github.com/brunoos/cnterra-controller/model"
 	"github.com/gin-gonic/gin"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/brunoos/cnterra-controller/db"
+	"github.com/brunoos/cnterra-controller/model"
 )
 
 type formCreateFile struct {

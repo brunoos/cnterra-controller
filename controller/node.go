@@ -4,11 +4,13 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/brunoos/cnterra-controller/db"
-	"github.com/brunoos/cnterra-controller/model"
 	"github.com/gin-gonic/gin"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/brunoos/cnterra-controller/db"
+	"github.com/brunoos/cnterra-controller/model"
 )
 
 type formCreateNode struct {
